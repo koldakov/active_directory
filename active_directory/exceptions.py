@@ -1,0 +1,2 @@
+class LDAPAuthBackendException(Exception):
+    pass
