@@ -7,12 +7,12 @@
 LDAP authentication backend.
 """
 
+from active_directory.exceptions import LDAPAuthBackendException
+from active_directory.utils.active_directory import get_users_info_ad
+from active_directory.utils.active_directory import get_user_principal_name
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
-from active_directory.exceptions import LDAPAuthBackendException
-from active_directory.utils.active_directory import get_users_ad
-from active_directory.utils.active_directory import get_user_principal_name
 
 
 class LDAPBackend(BaseBackend):
@@ -21,6 +21,7 @@ class LDAPBackend(BaseBackend):
         username = self.clean_username(username)
 
         if not username:
+            # Not AD username format. domain\username or username@domain only
             return None
 
         user_info = self.get_user_info(username, password)
@@ -28,15 +29,15 @@ class LDAPBackend(BaseBackend):
         if not user_info:
             return None
 
-        user = self.get_or_create_local_user(username)
-
-        user = self.configure_user(user, user_info)
+        user = self.configure_user(self.get_or_create_local_user(username), user_info)
 
         return user
 
     def configure_user(self, user, user_info):
-        """
-
+        """ Modify user based on AD information.
+        :user: django User object
+        :user_info: user information from AD
+        :returns: modified django User
         """
 
         # TODO mapping AD to User values and access rights according to active_directory.model.UserAccountControlValues
@@ -70,21 +71,22 @@ class LDAPBackend(BaseBackend):
     @staticmethod
     def get_user_info(username, password):
         """
-
+        :username: username of AD user
+        :password: password of AD user
+        :returns: None if user not found in AD, dict with user AD info if user found
+        :raises: LDAPAuthBackendException if found more than one user in AD
         """
-        result = []
-
-        for settings_ad_users_info in get_users_ad(
+        results = get_users_info_ad(
                 login_username=username,
                 login_password=password,
-                users=[username.split('@')[0]]):
-            for user_info in settings_ad_users_info:
-                result.append(user_info)
+                users=[username.split('@')[0]])
 
-        if len(result) == 1:
-            return result[0]
-        elif len(result) == 0:
+        if len(results) == 1:
+            return results[0]
+        elif len(results) == 0:
             # No users found
             return None
         else:
-            raise LDAPAuthBackendException('More than one users found for user %s' % username)
+            # This means that AD is configured wrong
+            # TODO think should we raise exception or notify user (system administrator ?) or just return None
+            raise LDAPAuthBackendException('More than one user found for user %s' % username)

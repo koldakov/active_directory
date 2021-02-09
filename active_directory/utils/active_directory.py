@@ -51,10 +51,17 @@ def get_user_principal_name(username):
     :username: username
     :returns: user normal name (userPrincipalName)
     """
+
+    if username is None:
+        return None
+
+    username = str(username)
+
     if '@' in username:
         return username
-    # For mammoths
     elif '\\' in username:
+        # For mammoths
+        # domain\username is the same as username@domain
         return '@'.join(reversed(username.split('\\')))
     else:
         return None
@@ -74,7 +81,6 @@ def get_settings_ad(settings_ad_type=None):
     :returns: iterator (it can be list) of all settings
     """
     if not settings_ad_type:
-        # TODO think about searching in all settings. May be need just one? It will simplify everything!
         return SettingsActiveDirectory.objects.all().iterator()
 
 
@@ -86,7 +92,7 @@ def get_connections_ad(login_username=None, login_password=None):
     """
 
     for settings_ad in get_settings_ad():
-
+        # Search in all AD settings. It can be different domain controllers, users and so on
         if not login_username:
             login_username = settings_ad.username_ad
             login_password = settings_ad.password_ad
@@ -105,13 +111,13 @@ def get_connections_ad(login_username=None, login_password=None):
             yield None, None
 
 
-def get_users_ad(login_username=None, login_password=None, users=None, attributes='*'):
+def get_users_info_ad(login_username=None, login_password=None, users=None, attributes='*'):
     """
     :login_username: username to establish ldap connection. Use settings login if None
     :login_password: password to establish ldap connection. Use settings password if None
-    :users: must be list of users (['user1', 'user2']) to search users user1 and user2 or None to search all users
+    :users: must be list of users (['user1', .., 'userN']) to search users user1, .., userN or None to search all users
     :attributes: ldap parameter, can be * to search all attributes, or you can specify individual: ['mail']
-    :yields: results from different settings
+    :returns: results from different settings
     """
 
     if not users:
@@ -122,28 +128,30 @@ def get_users_ad(login_username=None, login_password=None, users=None, attribute
 
         search_filter = '(&(objectClass=person)(|%s))' % ''.join(['(sAMAccountName=%s)' % user for user in users])
 
+    results = []
+
     for search_base, conn in get_connections_ad(login_username=login_username, login_password=login_password):
+        # Search in all settings
         if conn is None:
             # TODO notify user (system administrator ?) that AD settings does not work
             # Continue to the next settings
             continue
 
-        entry_generator = conn.extend.standard.paged_search(
+        for entry in conn.extend.standard.paged_search(
             search_base=search_base,
             search_filter=search_filter,
             search_scope=ldap3.SUBTREE,
             attributes=attributes,
             paged_size=500,
             generator=True
-        )
+        ):
 
-        results = []
-
-        for entry in entry_generator:
             # Remove searchResRef results
             if entry.get('type') != 'searchResRef':
                 results.append(entry)
 
         conn.unbind()
 
-        yield results
+    # It's normal not to yield but to return here
+    # TODO think: or yield each result?
+    return results
