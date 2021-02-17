@@ -46,7 +46,10 @@ class Command(BaseCommand):
                 users=users, attributes=attributes
             )
             if users_info:
-                print(users_info)
+                for user in users_info:
+                    # TODO change print to return (pretty view)
+                    print(user.get('dn'))
+                return 0
             else:
                 return 'Users not found'
 

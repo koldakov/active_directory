@@ -42,14 +42,20 @@ just remove SettingsActiveDirectory.
 """
 
 from active_directory.models import SettingsActiveDirectory
-from active_directory.exceptions import LDAPAuthBackendException
+from active_directory.exceptions import LDAPException
 import ldap3
+
+
+def fix_types(entry):
+    # TODO fix encodings, auto_encode (Connection) in ldap3-2.9 does not work well? Everything in bytes,
+    #  should fix manually?
+    return entry
 
 
 def get_user_principal_name(username):
     """
     :username: username
-    :returns: user normal name (userPrincipalName)
+    :return: user normal name (userPrincipalName) or None
     """
 
     if username is None:
@@ -70,7 +76,7 @@ def get_user_principal_name(username):
 def get_search_base(username):
     """
     :username: username
-    :returns: search base or distinguished name (dn)
+    :return: search base or distinguished name (dn)
     """
     return ''.join(['dc=%s,' % u for u in username.split('@')[1].split('.')]).strip(',')
 
@@ -78,7 +84,7 @@ def get_search_base(username):
 def get_settings_ad(settings_ad_type=None):
     """
     :settings_ad_type: this parameter allows to get AD settings from different places: model, settings.py, etc
-    :returns: iterator (it can be list) of all settings
+    :return: iterator (it can be list) of all settings
     """
     if not settings_ad_type:
         return SettingsActiveDirectory.objects.all().iterator()
@@ -88,7 +94,7 @@ def get_connections_ad(login_username=None, login_password=None):
     """
     :login_username: username to establish ldap connection. Use settings login if None
     :login_password: password to establish ldap connection. Use settings password if None
-    :yields: search base (distinguished name) and ldap connection OR None, None
+    :yield: search base (distinguished name) and ldap connection OR None, None
     """
 
     for settings_ad in get_settings_ad():
@@ -117,16 +123,17 @@ def get_users_info_ad(login_username=None, login_password=None, users=None, attr
     :login_password: password to establish ldap connection. Use settings password if None
     :users: must be list of users (['user1', .., 'userN']) to search users user1, .., userN or None to search all users
     :attributes: ldap parameter, can be * to search all attributes, or you can specify individual: ['mail']
-    :returns: results from different settings
+    :return: results from different settings
     """
 
     if not users:
         search_filter = '(objectClass=person)'
     else:
         if not isinstance(users, list):
-            raise LDAPAuthBackendException('Users must be list of users or None')
+            raise LDAPException('Users must be list of users or None')
 
-        search_filter = '(&(objectClass=person)(|%s))' % ''.join(['(sAMAccountName=%s)' % user for user in users])
+        search_filter = '(&(objectClass=person)(|%s))' % ''.join(
+            ['(sAMAccountName=%s)' % user.strip() for user in users])
 
     results = []
 
@@ -145,10 +152,9 @@ def get_users_info_ad(login_username=None, login_password=None, users=None, attr
             paged_size=500,
             generator=True
         ):
-
             # Remove searchResRef results
             if entry.get('type') != 'searchResRef':
-                results.append(entry)
+                results.append(fix_types(entry))
 
         conn.unbind()
 

@@ -37,7 +37,7 @@ class LDAPBackend(BaseBackend):
         """ Modify user based on AD information.
         :user: django User object
         :user_info: user information from AD
-        :returns: modified django User
+        :return: modified django User
         """
 
         # TODO mapping AD to User values and access rights according to active_directory.model.UserAccountControlValues
@@ -73,8 +73,8 @@ class LDAPBackend(BaseBackend):
         """
         :username: username of AD user
         :password: password of AD user
-        :returns: None if user not found in AD, dict with user AD info if user found
-        :raises: LDAPAuthBackendException if found more than one user in AD
+        :return: None if user not found in AD, dict with user AD info if user found
+        :raise: LDAPAuthBackendException if found more than one user in AD
         """
         results = get_users_info_ad(
                 login_username=username,
