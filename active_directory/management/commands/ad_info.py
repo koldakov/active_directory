@@ -9,7 +9,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '-u',
             '--users',
-            nargs='+',
+            nargs='*',
             help='Get users information from active directory'
         )
 
@@ -40,17 +40,16 @@ class Command(BaseCommand):
         login_username = options.get('login_username')[0] if options.get('login_username') else None
         login_password = options.get('login_password')[0] if options.get('login_password') else None
 
-        if users:
-            users_info = get_users_info_ad(
-                login_username=login_username, login_password=login_password,
-                users=users, attributes=attributes
-            )
-            if users_info:
-                for user in users_info:
-                    # TODO change print to return (pretty view)
-                    print(user.get('dn'))
-                return 0
-            else:
-                return 'Users not found'
+        users_info = get_users_info_ad(
+            login_username=login_username, login_password=login_password,
+            users=users, attributes=attributes
+        )
+        if users_info:
+            for user in users_info:
+                # TODO change print to return (pretty view)
+                print(user.get('dn'))
+            return 0
+        else:
+            return 'Users not found'
 
         return '-h/--help'
