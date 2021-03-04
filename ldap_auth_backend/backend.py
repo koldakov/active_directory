@@ -89,4 +89,4 @@ class LDAPBackend(BaseBackend):
         else:
             # This means that AD is configured wrong
             # TODO think should we raise exception or notify user (system administrator ?) or just return None
-            raise LDAPAuthBackendException('More than one user found for user %s' % username)
+            raise LDAPAuthBackendException(f'More than one user found for user {username}')

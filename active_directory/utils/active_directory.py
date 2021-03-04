@@ -78,7 +78,7 @@ def get_search_base(username):
     :username: username
     :return: search base or distinguished name (dn)
     """
-    return ''.join(['dc=%s,' % u for u in username.split('@')[1].split('.')]).strip(',')
+    return ''.join([f'dc={u},' for u in username.split('@')[1].split('.')]).strip(',')
 
 
 def get_settings_ad(settings_ad_type=None):
@@ -121,7 +121,7 @@ def get_users_info_ad(login_username=None, login_password=None, users=None, attr
     """
     :login_username: username to establish ldap connection. Use settings login if None
     :login_password: password to establish ldap connection. Use settings password if None
-    :users: must be list of users (['user1', .., 'userN']) to search users user1, .., userN or None to search all users
+    :users: must be list/tuple of users to search users or None to search all users
     :attributes: ldap parameter, can be * to search all attributes, or you can specify individual: ['mail']
     :return: results from different settings
     """
@@ -129,11 +129,11 @@ def get_users_info_ad(login_username=None, login_password=None, users=None, attr
     if not users:
         search_filter = '(objectClass=person)'
     else:
-        if not isinstance(users, list):
-            raise LDAPException('Users must be list of users or None')
+        if not isinstance(users, (list, tuple)):
+            raise LDAPException('Users must be list/tuple of users or None')
 
-        search_filter = '(&(objectClass=person)(|%s))' % ''.join(
-            ['(sAMAccountName=%s)' % user.strip() for user in users])
+        sam_account_names = ''.join([f'(sAMAccountName={str(user).strip()})' for user in users])
+        search_filter = f'(&(objectClass=person)(|{sam_account_names}))'
 
     results = []
 
