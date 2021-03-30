@@ -26,17 +26,17 @@ You can get settings through settings.py:
 ```python
 SETTINGS_ACTIVE_DIRECTORY = [
     {
-        username_ad: 'username_ad',
-        password_ad: 'password_ad',
-        domain_ad: 'domain_ad',
-        ssl_ad: False,
-        port_ad: 389
+        username: 'username',
+        password: 'password',
+        domain: 'domain',
+        ssl: False,
+        port: 389
     }
 ]
 ```
 
 Or through "SettingsActiveDirectory" (preferred). Do migration, add record to table.
-If you want to use only 'Authentication Using LDAP' you don't need to fill 'username_ad' and 'password_ad' - this fields will be get from auth form.
+If you want to use only 'Authentication Using LDAP' you don't need to fill 'username' and 'password' - this fields will be get from auth form.
 
 ## Conclusion
 

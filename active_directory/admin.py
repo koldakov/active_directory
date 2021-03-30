@@ -1,3 +1,10 @@
 from django.contrib import admin
+from .models import SettingsActiveDirectory
+from .forms import SettingsActiveDirectoryForm
 
-# Register your models here.
+
+class SettingsActiveDirectoryAdmin(admin.ModelAdmin):
+    form = SettingsActiveDirectoryForm
+
+
+admin.site.register(SettingsActiveDirectory, SettingsActiveDirectoryAdmin)

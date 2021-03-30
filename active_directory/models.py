@@ -1,18 +1,22 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 import ldap3
-from active_directory.exceptions import LDAPException
+from .exceptions import LDAPException
 
 
 class SettingsActiveDirectory(models.Model):
-    username_ad = models.CharField(_('AD Username'), max_length=150, null=False, blank=False)
-    password_ad = models.CharField(_('Password of AD user'), max_length=128, null=False, blank=False)
-    domain_ad = models.CharField(_('Domain controller'), max_length=256, null=False, blank=False)
-    ssl_ad = models.BooleanField(_('SSL'), default=False, null=False, blank=False)
-    port_ad = models.PositiveIntegerField(_('Active directory port'), default=389, blank=False)
+    username = models.CharField(_('AD Username'), max_length=150, null=False, blank=False)
+    password = models.CharField(_('Password of AD user'), max_length=128, null=False, blank=False)
+    domain = models.CharField(_('Domain controller'), max_length=256, null=False, blank=False)
+    ssl = models.BooleanField(_('SSL'), default=False, null=False, blank=False)
+    port = models.PositiveIntegerField(_('Active directory port'), default=389, blank=False)
+
+    class Meta:
+        verbose_name = (_('Active directory setting'))
+        verbose_name_plural = (_('Active directory settings'))
 
     def __str__(self):
-        return str(self.domain_ad)
+        return str(self.domain)
 
     @staticmethod
     def get_user_principal_name(username):
@@ -40,7 +44,7 @@ class SettingsActiveDirectory(models.Model):
         :username: username
         :return: search base or distinguished name (dn)
         """
-        username = self.get_user_principal_name(self.username_ad)
+        username = self.get_user_principal_name(self.username)
         return ''.join([f'dc={u},' for u in username.split('@')[1].split('.')]).strip(',')
 
     def get_connection(self, login_username=None, login_password=None):
@@ -50,16 +54,16 @@ class SettingsActiveDirectory(models.Model):
         :return: search base (distinguished name) and ldap connection OR None, None
         """
         if not login_username:
-            login_username = self.username_ad
-            login_password = self.password_ad
+            login_username = self.username
+            login_password = self.password
 
-        server = ldap3.Server(self.domain_ad, port=self.port_ad, use_ssl=self.ssl_ad,
+        server = ldap3.Server(self.domain, port=self.port, use_ssl=self.ssl,
                               get_info=ldap3.ALL)
-        username_ad = self.get_user_principal_name(login_username)
+        username = self.get_user_principal_name(login_username)
         search_base = self.get_search_base()
 
         try:
-            return search_base, ldap3.Connection(server, username_ad, login_password, auto_bind=True)
+            return search_base, ldap3.Connection(server, username, login_password, auto_bind=True)
         except ldap3.core.exceptions.LDAPSocketOpenError:
             return None, None
         except ldap3.core.exceptions.LDAPBindError:
