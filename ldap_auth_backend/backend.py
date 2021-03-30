@@ -8,11 +8,10 @@ LDAP authentication backend.
 """
 
 from active_directory.exceptions import LDAPAuthBackendException
-from active_directory.utils.active_directory import get_users_info_ad
-from active_directory.utils.active_directory import get_user_principal_name
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+from active_directory.models import SettingsActiveDirectory
 
 
 class LDAPBackend(BaseBackend):
@@ -54,7 +53,7 @@ class LDAPBackend(BaseBackend):
 
     def clean_username(self, username):
         # Only userPrincipalName format. Pre-Windows 2000 has no chances
-        return get_user_principal_name(username)
+        return SettingsActiveDirectory.get_user_principal_name(username)
 
     def get_or_create_local_user(self, username):
 
@@ -76,17 +75,24 @@ class LDAPBackend(BaseBackend):
         :return: None if user not found in AD, dict with user AD info if user found
         :raise: LDAPAuthBackendException if found more than one user in AD
         """
-        results = get_users_info_ad(
-                login_username=username,
-                login_password=password,
-                users=[username.split('@')[0]])
 
-        if len(results) == 1:
-            return results[0]
-        elif len(results) == 0:
-            # No users found
-            return None
-        else:
-            # This means that AD is configured wrong
-            # TODO think should we raise exception or notify user (system administrator ?) or just return None
-            raise LDAPAuthBackendException(f'More than one user found for user {username}')
+        for ad_setting in SettingsActiveDirectory.objects.all():
+
+            results = ad_setting.get_users_info_ad(
+                    login_username=username,
+                    login_password=password,
+                    users=[username.split('@')[0]])
+
+            if len(results) == 1:
+                return results[0]
+            elif len(results) == 0:
+                # No users found
+                # continue to the next SettingsActiveDirectory
+                continue
+            else:
+                # This means that AD is configured wrong
+                # TODO think should we raise exception or notify user (system administrator ?) or just return None
+                raise LDAPAuthBackendException(f'More than one user found for user {username}')
+
+        # No users found
+        return None

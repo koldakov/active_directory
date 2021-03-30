@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+import ldap3
+from active_directory.exceptions import LDAPException
 
 
 class SettingsActiveDirectory(models.Model):
@@ -11,6 +13,92 @@ class SettingsActiveDirectory(models.Model):
 
     def __str__(self):
         return str(self.domain_ad)
+
+    @staticmethod
+    def get_user_principal_name(username):
+        """
+        :username: username
+        :return: user normal name (userPrincipalName) or None
+        """
+
+        if username is None:
+            return None
+
+        username = str(username)
+
+        if '@' in username:
+            return username
+        elif '\\' in username:
+            # For mammoths
+            # domain\username is the same as username@domain
+            return '@'.join(reversed(username.split('\\')))
+        else:
+            return None
+
+    def get_search_base(self):
+        """
+        :username: username
+        :return: search base or distinguished name (dn)
+        """
+        username = self.get_user_principal_name(self.username_ad)
+        return ''.join([f'dc={u},' for u in username.split('@')[1].split('.')]).strip(',')
+
+    def get_connection(self, login_username=None, login_password=None):
+        """
+        :login_username: username to establish ldap connection. Use settings login if None
+        :login_password: password to establish ldap connection. Use settings password if None
+        :return: search base (distinguished name) and ldap connection OR None, None
+        """
+        if not login_username:
+            login_username = self.username_ad
+            login_password = self.password_ad
+
+        server = ldap3.Server(self.domain_ad, port=self.port_ad, use_ssl=self.ssl_ad,
+                              get_info=ldap3.ALL)
+        username_ad = self.get_user_principal_name(login_username)
+        search_base = self.get_search_base()
+
+        try:
+            return search_base, ldap3.Connection(server, username_ad, login_password, auto_bind=True)
+        except ldap3.core.exceptions.LDAPSocketOpenError:
+            return None, None
+        except ldap3.core.exceptions.LDAPBindError:
+            return None, None
+
+    def get_users_info_ad(self, login_username=None, login_password=None, users=None, attributes='*'):
+
+        if not users:
+            search_filter = '(objectClass=person)'
+        else:
+            if not isinstance(users, (list, tuple)):
+                raise LDAPException('Users must be list/tuple of users or None')
+
+            sam_account_names = ''.join([f'(sAMAccountName={str(user).strip()})' for user in users])
+            search_filter = f'(&(objectClass=person)(|{sam_account_names}))'
+
+        results = []
+        search_base, conn = self.get_connection(login_username=login_username, login_password=login_password)
+
+        if conn is None:
+            raise LDAPException('Users must be list/tuple of users or None')
+
+        for entry in conn.extend.standard.paged_search(
+            search_base=search_base,
+            search_filter=search_filter,
+            search_scope=ldap3.SUBTREE,
+            attributes=attributes,
+            paged_size=500,
+            generator=True
+        ):
+            # Remove searchResRef results
+            if entry.get('type') != 'searchResRef':
+                results.append(entry)
+
+        conn.unbind()
+
+        # It's normal not to yield but to return here
+        # TODO think: or yield each result?
+        return results
 
 
 # https://docs.microsoft.com/ru-ru/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties
