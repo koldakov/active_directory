@@ -4,10 +4,10 @@ import ldap3
 from .exceptions import LDAPException
 
 
-class SettingsActiveDirectory(models.Model):
+class Settings(models.Model):
     username = models.CharField(_('AD Username'), max_length=150, null=False, blank=False)
     password = models.CharField(_('Password of AD user'), max_length=128, null=False, blank=False)
-    domain = models.CharField(_('Domain controller'), max_length=256, null=False, blank=False)
+    domain = models.CharField(_('Domain controller'), max_length=256, null=False, blank=False, unique=True)
     ssl = models.BooleanField(_('SSL'), default=False, null=False, blank=False)
     port = models.PositiveIntegerField(_('Active directory port'), default=389, blank=False)
 

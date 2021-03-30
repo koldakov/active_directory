@@ -1,11 +1,11 @@
 from django import forms
-from .models import SettingsActiveDirectory
+from .models import Settings
 
 
-class SettingsActiveDirectoryForm(forms.ModelForm):
+class SettingsForm(forms.ModelForm):
 
     class Meta:
-        model = SettingsActiveDirectory
+        model = Settings
         fields = ('domain', 'username', 'password', 'port', 'ssl')
         widgets = {
             'password': forms.PasswordInput(),

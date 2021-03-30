@@ -11,7 +11,7 @@ from active_directory.exceptions import LDAPAuthBackendException
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
-from active_directory.models import SettingsActiveDirectory
+from active_directory.models import Settings
 
 
 class LDAPBackend(BaseBackend):
@@ -53,7 +53,7 @@ class LDAPBackend(BaseBackend):
 
     def clean_username(self, username):
         # Only userPrincipalName format. Pre-Windows 2000 has no chances
-        return SettingsActiveDirectory.get_user_principal_name(username)
+        return Settings.get_user_principal_name(username)
 
     def get_or_create_local_user(self, username):
 
@@ -76,7 +76,7 @@ class LDAPBackend(BaseBackend):
         :raise: LDAPAuthBackendException if found more than one user in AD
         """
 
-        for ad_setting in SettingsActiveDirectory.objects.all():
+        for ad_setting in Settings.objects.all():
 
             results = ad_setting.get_users_info_ad(
                     login_username=username,
@@ -87,7 +87,7 @@ class LDAPBackend(BaseBackend):
                 return results[0]
             elif len(results) == 0:
                 # No users found
-                # continue to the next SettingsActiveDirectory
+                # continue to the next Settings
                 continue
             else:
                 # This means that AD is configured wrong

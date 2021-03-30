@@ -7,7 +7,7 @@
 This util is used for working with active directory.
 """
 
-from active_directory.models import SettingsActiveDirectory
+from active_directory.models import Settings
 
 
 def get_users_info_ad(login_username=None, login_password=None, users=None, attributes='*'):
@@ -21,7 +21,7 @@ def get_users_info_ad(login_username=None, login_password=None, users=None, attr
 
     results = []
 
-    for ad_setting in SettingsActiveDirectory.objects.all():
+    for ad_setting in Settings.objects.all():
         results.extend(
             ad_setting.get_users_info_ad(
                 login_username=login_username, login_password=login_password, users=users, attributes=attributes)

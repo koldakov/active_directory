@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 
-class YourTestClass(TestCase):
+class ADInfoTestCase(TestCase):
 
     def setUp(self):
         pass

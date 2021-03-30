@@ -35,7 +35,7 @@ SETTINGS_ACTIVE_DIRECTORY = [
 ]
 ```
 
-Or through "SettingsActiveDirectory" (preferred). Do migration, add record to table.
+Or through "Settings" (preferred). Do migration, add record to table.
 If you want to use only 'Authentication Using LDAP' you don't need to fill 'username' and 'password' - this fields will be get from auth form.
 
 ## Conclusion
