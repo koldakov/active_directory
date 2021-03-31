@@ -5,8 +5,10 @@ from .exceptions import LDAPException
 
 
 class Settings(models.Model):
-    username = models.CharField(_('AD Username'), max_length=150, null=False, blank=False)
-    password = models.CharField(_('Password of AD user'), max_length=128, null=False, blank=False)
+    username = models.CharField(
+        _('AD Username'), max_length=256, null=True, blank=True,
+        help_text=_('Username should contain \'@\' or \'\\\' or be empty if you want to use settings only for login'))
+    password = models.CharField(_('Password of AD user'), max_length=128, null=True, blank=True)
     domain = models.CharField(_('Domain controller'), max_length=256, null=False, blank=False, unique=True)
     ssl = models.BooleanField(_('SSL'), default=False, null=False, blank=False)
     port = models.PositiveIntegerField(_('Active directory port'), default=389, blank=False)
@@ -38,6 +40,13 @@ class Settings(models.Model):
             return '@'.join(reversed(username.split('\\')))
         else:
             return None
+
+    def save(self, *args, **kwargs):
+
+        if not self.username:
+            self.password = None
+
+        super().save(*args, **kwargs)
 
     def get_search_base(self):
         """
