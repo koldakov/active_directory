@@ -43,7 +43,13 @@ class Settings(models.Model):
 
     def save(self, *args, **kwargs):
 
+        if self.username:
+            self.username = self.username.strip()
+        if self.domain:
+            self.domain = self.domain.strip()
+
         if not self.username:
+            self.username = None
             self.password = None
 
         super().save(*args, **kwargs)

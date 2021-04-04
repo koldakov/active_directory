@@ -11,12 +11,12 @@ Install the ldap3 package with pip:
 $ pip install ldap3=2.9
 ```
 
-To use Django Authentication backend add ```'ldap_auth_backend.backend.LDAPBackend'``` to ```AUTHENTICATION_BACKENDS``` in settings.py.
+To use Django Authentication backend add ```'ldap_backend.backend.LDAPBackend'``` to ```AUTHENTICATION_BACKENDS``` in settings.py.
 You should get something like this:
 ```python
 AUTHENTICATION_BACKENDS = [
     'django_auth_ldap.backend.LDAPBackend',
-    'ldap_auth_backend.backend.LDAPBackend'
+    'ldap_backend.backend.LDAPBackend'
 ]
 ```
 

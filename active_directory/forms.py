@@ -14,15 +14,12 @@ class SettingsForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super(SettingsForm, self).clean()
-        username = cleaned_data.get('username')
+        username = cleaned_data.get('username') or ''
+        username = username.strip()
         separators = ('@', '\\')
 
-        if username:
+        if username.startswith(separators) or username.endswith(separators):
+            raise forms.ValidationError(_(f'Username should not starts or ends with {" or ".join(separators)}.'))
 
-            username = username.strip()
-
-            if username.startswith(separators) or username.endswith(separators):
-                raise forms.ValidationError(_(f'Username should not starts or ends with {" or ".join(separators)}.'))
-
-            if not any(separator in username for separator in separators):
-                raise forms.ValidationError(_(f'Username should contain {" or ".join(separators)}.'))
+        if not any(separator in username for separator in separators):
+            raise forms.ValidationError(_(f'Username should contain {" or ".join(separators)}.'))
