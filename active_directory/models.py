@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-import ldap3
 from .exceptions import LDAPException
+import ldap3
 
 
 class Settings(models.Model):
@@ -19,6 +19,10 @@ class Settings(models.Model):
 
     def __str__(self):
         return str(self.domain)
+
+    @staticmethod
+    def locate_domain_controllers():
+        return []
 
     @staticmethod
     def get_user_principal_name(username):

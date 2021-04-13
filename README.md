@@ -20,6 +20,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 ```
 
+To use templates add os.path.join(BASE_DIR, 'active_directory.templates') to 'DIRS' in 'TEMPLATES'
+
 ## Configuration Example
 
 You can get settings through settings.py:

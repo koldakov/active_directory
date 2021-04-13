@@ -1,0 +1,12 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block submit_buttons_bottom %}
+    {% comment %}
+      Prepare to "Locate domain controllers"
+      <div class="submit-row">
+          <input type="submit" value="{% trans 'Get domain controllers' %}" name="_get_domain_controllers" />
+      </div>
+    {% endcomment %}
+    {{ block.super }}
+{% endblock %}
