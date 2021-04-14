@@ -8,10 +8,13 @@ LDAP authentication backend.
 """
 
 from active_directory.exceptions import LDAPAuthBackendException
+from active_directory.models import Settings
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
+from django.core import exceptions
 from django.contrib.auth.models import Group
-from active_directory.models import Settings
+from django.utils.translation import gettext_lazy as _
+from ldap3.core.exceptions import LDAPException
 
 
 class LDAPBackend(BaseBackend):
@@ -76,23 +79,33 @@ class LDAPBackend(BaseBackend):
         :raise: LDAPAuthBackendException if found more than one user in AD
         """
 
-        for ad_setting in Settings.objects.all():
+        results = []
 
-            results = ad_setting.get_users_info_ad(
-                    login_username=username,
-                    login_password=password,
-                    users=[username.split('@')[0]])
+        if Settings.objects.count() == 0:
+            # raise ValidationError in auth backend is not Django way but it's beautiful
+            raise exceptions.ValidationError(_('No active AD connections found'))
 
-            if len(results) == 1:
-                return results[0]
-            elif len(results) == 0:
-                # No users found
-                # continue to the next Settings
+        for setting in Settings.objects.all():
+
+            try:
+                results.extend(
+                    setting.get_users_info_ad(
+                        login_username=username,
+                        login_password=password,
+                        users=[username.split('@')[0]]
+                    )
+                )
+            except LDAPException:
                 continue
-            else:
-                # This means that AD is configured wrong
-                # TODO think should we raise exception or notify user (system administrator ?) or just return None
-                raise LDAPAuthBackendException(f'More than one user found for user {username}')
 
-        # No users found
-        return None
+        if len(results) == 1:
+            return results[0]
+        elif len(results) == 0:
+            # No users found
+            return None
+        else:
+            # This means that AD is configured wrong
+            # or two AD have the same user
+            # TODO think should we raise exception or notify user (system administrator ?) or just return None
+            # raise ValidationError in auth backend is not Django way but it's beautiful
+            raise exceptions.ValidationError(_('Contact your administrator. More than one user found'))

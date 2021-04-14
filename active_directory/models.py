@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from .exceptions import LDAPException
 import ldap3
 
 
@@ -79,14 +78,11 @@ class Settings(models.Model):
         server = ldap3.Server(self.domain, port=self.port, use_ssl=self.ssl,
                               get_info=ldap3.ALL)
         username = self.get_user_principal_name(login_username)
-        search_base = self.get_search_base()
 
         try:
-            return search_base, ldap3.Connection(server, username, login_password, auto_bind=True)
-        except ldap3.core.exceptions.LDAPSocketOpenError:
-            return None, None
-        except ldap3.core.exceptions.LDAPBindError:
-            return None, None
+            return ldap3.Connection(server, username, login_password, auto_bind=True)
+        except (ldap3.core.exceptions.LDAPSocketOpenError, ldap3.core.exceptions.LDAPBindError):
+            return None
 
     def get_users_info_ad(self, login_username=None, login_password=None, users=None, attributes='*'):
 
@@ -94,18 +90,19 @@ class Settings(models.Model):
             search_filter = '(objectClass=person)'
         else:
             if not isinstance(users, (list, tuple)):
-                raise LDAPException('Users must be list/tuple of users or None')
+                raise ldap3.core.exceptions.LDAPException('Users must be list/tuple of users or None')
 
             sam_account_names = ''.join([f'(sAMAccountName={str(user).strip()})' for user in users])
             search_filter = f'(&(objectClass=person)(|{sam_account_names}))'
 
         results = []
-        search_base, conn = self.get_connection(login_username=login_username, login_password=login_password)
+        search_base = self.get_search_base()
+        connection = self.get_connection(login_username=login_username, login_password=login_password)
 
-        if conn is None:
-            raise LDAPException('Users must be list/tuple of users or None')
+        if connection is None:
+            raise ldap3.core.exceptions.LDAPException('No active AD connections found')
 
-        for entry in conn.extend.standard.paged_search(
+        for entry in connection.extend.standard.paged_search(
             search_base=search_base,
             search_filter=search_filter,
             search_scope=ldap3.SUBTREE,
@@ -117,7 +114,8 @@ class Settings(models.Model):
             if entry.get('type') != 'searchResRef':
                 results.append(entry)
 
-        conn.unbind()
+        if connection is not None:
+            connection.unbind()
 
         # It's normal not to yield but to return here
         # TODO think: or yield each result?

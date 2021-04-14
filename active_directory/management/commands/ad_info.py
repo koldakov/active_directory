@@ -3,14 +3,14 @@ from active_directory.utils.active_directory import get_users_info_ad
 
 
 class Command(BaseCommand):
-    help = 'Get information from active_directory by given parameters'
+    help = 'Get information from active directory by given parameters. Search through all active directory settings'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '-u',
             '--users',
             nargs='*',
-            help='Get users information from active directory'
+            help='Get users information from active directory. Specify without domain controller'
         )
 
         parser.add_argument(
