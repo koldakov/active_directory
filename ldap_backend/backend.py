@@ -88,14 +88,14 @@ class LDAPBackend(BaseBackend):
         for setting in Settings.objects.all():
 
             try:
-                results.extend(
-                    setting.get_users_info_ad(
+                result = setting.get_users_info_ad(
                         login_username=username,
                         login_password=password,
                         users=[username.split('@')[0]]
                     )
-                )
+                results.extend(result)
             except LDAPException:
+                # Skipping wrong AD setting
                 continue
 
         if len(results) == 1:

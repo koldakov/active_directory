@@ -81,8 +81,8 @@ class Settings(models.Model):
 
         try:
             return ldap3.Connection(server, username, login_password, auto_bind=True)
-        except (ldap3.core.exceptions.LDAPSocketOpenError, ldap3.core.exceptions.LDAPBindError):
-            return None
+        except (ldap3.core.exceptions.LDAPSocketOpenError, ldap3.core.exceptions.LDAPBindError) as e:
+            raise e
 
     def get_users_info_ad(self, login_username=None, login_password=None, users=None, attributes='*'):
 

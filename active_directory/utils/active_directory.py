@@ -11,7 +11,7 @@ from active_directory.models import Settings
 from ldap3.core.exceptions import LDAPException
 
 
-def get_users_info_ad(login_username=None, login_password=None, users=None, attributes='*'):
+def get_users_info_ad(login_username=None, login_password=None, users=None, domains=None, attributes='*'):
     """
     :login_username: username to establish ldap connection. Use settings login if None
     :login_password: password to establish ldap connection. Use settings password if None
@@ -22,13 +22,21 @@ def get_users_info_ad(login_username=None, login_password=None, users=None, attr
 
     results = []
 
-    for ad_setting in Settings.objects.all():
+    if not domains:
+        settings = Settings.objects.all()
+    else:
+        settings = Settings.objects.filter(domain__in=domains)
+
+    if not settings:
+        raise LDAPException('No active AD connections found')
+
+    for setting in settings:
         try:
-            results.extend(
-                ad_setting.get_users_info_ad(
-                    login_username=login_username, login_password=login_password, users=users, attributes=attributes)
-            )
-        except LDAPException:
+            result = setting.get_users_info_ad(
+                login_username=login_username, login_password=login_password, users=users, attributes=attributes)
+            results.extend(result)
+        except LDAPException as e:
+            print(f'Error \'{e}\' in AD settings {setting}')
             continue
 
     return results

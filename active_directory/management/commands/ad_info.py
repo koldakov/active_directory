@@ -1,5 +1,6 @@
-from django.core.management.base import BaseCommand
 from active_directory.utils.active_directory import get_users_info_ad
+from django.core.management.base import BaseCommand
+from ldap3.core.exceptions import LDAPException
 
 
 class Command(BaseCommand):
@@ -9,7 +10,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '-u',
             '--users',
-            nargs='*',
+            nargs='+',
             help='Get users information from active directory. Specify without domain controller'
         )
 
@@ -34,19 +35,30 @@ class Command(BaseCommand):
             help='Active directory password login'
         )
 
+        parser.add_argument(
+            '-d',
+            '--domains',
+            nargs='+',
+            help='Use definite active directory Settings'
+        )
+
     def handle(self, *args, **options):
         users = options.get('users') or None
         attributes = options.get('attributes') or '*'
         login_username = options.get('login_username')[0] if options.get('login_username') else None
         login_password = options.get('login_password')[0] if options.get('login_password') else None
+        domains = options.get('domains') or None
 
-        users_info = get_users_info_ad(
-            login_username=login_username, login_password=login_password,
-            users=users, attributes=attributes
-        )
+        try:
+            users_info = get_users_info_ad(
+                login_username=login_username, login_password=login_password,
+                users=users, domains=domains, attributes=attributes
+            )
+        except LDAPException as e:
+            return str(e)
         if users_info:
             for user in users_info:
-                # TODO change print to return (pretty view)
+                # TODO Change print to return (pretty view)
                 print(user.get('dn'))
             return 0
         else:
