@@ -122,6 +122,17 @@ class Settings(models.Model):
         return results
 
 
+class ADUser(models.Model):
+    username = models.CharField(_('AD Username'), max_length=256, null=False, blank=False)
+    mail = models.CharField(_('Mail address'), max_length=256, null=True, blank=True)
+    organizational_unit = models.CharField(_('Organizational unit'), max_length=64, null=True, blank=True)
+    user_principal_name = models.CharField(_('User principal name'), max_length=1024, null=True, blank=True)
+    sam_account_name = models.CharField(_('Sam account name'), max_length=32, null=True, blank=True)
+
+    def __str__(self):
+        return self.user_principal_name
+
+
 # https://docs.microsoft.com/ru-ru/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties
 class UserAccountControlValues(object):
     SCRIPT = 1

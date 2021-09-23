@@ -1,5 +1,6 @@
 from django import forms
 from .models import Settings
+from .models import ADUser
 from django.utils.translation import gettext as _
 
 
@@ -23,3 +24,10 @@ class SettingsForm(forms.ModelForm):
 
         if not any(separator in username for separator in separators):
             raise forms.ValidationError(_(f'Username should contain {" or ".join(separators)}.'))
+
+
+class ADUserForm(forms.ModelForm):
+
+    class Meta:
+        model = ADUser
+        fields = ('username', 'mail', 'organizational_unit', 'user_principal_name', 'sam_account_name')
